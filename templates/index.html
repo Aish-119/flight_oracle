@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flight Oracle — Price Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════
+     AUTH OVERLAY
+════════════════════════════════════════ -->
+<div id="auth-overlay" class="auth-overlay">
+  <div class="auth-card">
+    <div class="auth-brand">
+      <div class="auth-logo">✈</div>
+      <h1>Flight Oracle</h1>
+      <p>Price Intelligence Dashboard</p>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <div id="login-form" class="auth-form active">
+      <h2>Welcome back</h2>
+      <div class="field-group">
+        <label>Email</label>
+        <input type="email" id="login-email" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div class="field-group">
+        <label>Password</label>
+        <div class="pw-wrap">
+          <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
+          <button class="pw-toggle" onclick="togglePw('login-password')">👁</button>
+        </div>
+      </div>
+      <div id="login-error" class="auth-error"></div>
+      <button class="btn-primary" onclick="doLogin()">Sign In</button>
+      <p class="auth-switch">No account? <a onclick="switchAuth('signup')">Sign up free</a></p>
+    </div>
+
+    <!-- SIGNUP FORM -->
+    <div id="signup-form" class="auth-form">
+      <h2>Create account</h2>
+      <div class="field-group">
+        <label>Full Name</label>
+        <input type="text" id="signup-name" placeholder="Aishwarya M" autocomplete="name">
+      </div>
+      <div class="field-group">
+        <label>Email</label>
+        <input type="email" id="signup-email" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div class="field-group">
+        <label>Password</label>
+        <div class="pw-wrap">
+          <input type="password" id="signup-password" placeholder="Min 6 characters" autocomplete="new-password">
+          <button class="pw-toggle" onclick="togglePw('signup-password')">👁</button>
+        </div>
+      </div>
+      <div id="signup-error" class="auth-error"></div>
+      <button class="btn-primary" onclick="doSignup()">Create Account</button>
+      <p class="auth-switch">Already have an account? <a onclick="switchAuth('login')">Sign in</a></p>
+    </div>
+
+    <!-- DEMO SKIP -->
+    <button class="btn-ghost" onclick="skipAuth()">Continue as Guest →</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     SIDEBAR
+════════════════════════════════════════ -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <span class="brand-icon">✈</span>
+    <span class="brand-text">FareSight</span>
+  </div>
+
+  <nav class="sidebar-nav">
+    <button class="nav-item active" onclick="switchTab('dashboard')" data-tab="dashboard">
+      <span class="nav-icon">⬡</span>
+      <span class="nav-label">Dashboard</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('predictor')" data-tab="predictor">
+      <span class="nav-icon">◈</span>
+      <span class="nav-label">Predictor</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('analytics')" data-tab="analytics">
+      <span class="nav-icon">◉</span>
+      <span class="nav-label">Analytics</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('insights')" data-tab="insights">
+      <span class="nav-icon">◑</span>
+      <span class="nav-label">Insights</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('ai-model')" data-tab="ai-model">
+      <span class="nav-icon">◬</span>
+      <span class="nav-label">AI Model</span>
+    </button>
+  </nav>
+
+  <!-- USER PROFILE (bottom left) -->
+  <div class="sidebar-profile" id="sidebar-profile" onclick="openProfile()">
+    <div class="profile-avatar" id="profile-avatar">?</div>
+    <div class="profile-meta">
+      <div class="profile-name" id="profile-name">Guest</div>
+      <div class="profile-sub" id="profile-sub">Click to sign in</div>
+    </div>
+    <span class="profile-chevron">›</span>
+  </div>
+</aside>
+
+<!-- ════════════════════════════════════════
+     MAIN CONTENT
+════════════════════════════════════════ -->
+<main class="main-content">
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <h2 class="page-title" id="page-title">Dashboard</h2>
+      <span class="page-sub" id="page-sub">Real-time flight price intelligence</span>
+    </div>
+    <div class="topbar-right">
+      <div class="status-badge" id="model-badge">
+        <span class="status-dot"></span>
+        <span id="model-status-text">Loading…</span>
+      </div>
+      <div class="live-time" id="live-time"></div>
+    </div>
+  </header>
+
+  <!-- ── DASHBOARD TAB ── -->
+  <section class="tab-section active" id="tab-dashboard">
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-label">Total Records</div>
+        <div class="kpi-value" id="kpi-records">—</div>
+        <div class="kpi-sub">flight entries</div>
+      </div>
+      <div class="kpi-card accent-green">
+        <div class="kpi-label">Avg Price</div>
+        <div class="kpi-value" id="kpi-avg">—</div>
+        <div class="kpi-sub">across all routes</div>
+      </div>
+      <div class="kpi-card accent-blue">
+        <div class="kpi-label">Min Price</div>
+        <div class="kpi-value" id="kpi-min">—</div>
+        <div class="kpi-sub">lowest found</div>
+      </div>
+      <div class="kpi-card accent-amber">
+        <div class="kpi-label">Max Price</div>
+        <div class="kpi-value" id="kpi-max">—</div>
+        <div class="kpi-sub">highest found</div>
+      </div>
+    </div>
+
+    <div class="charts-grid-2">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Average Fare by Airline</div>
+            <div class="chart-desc">Mean ticket price in ₹ per airline — Economy + Business combined</div>
+          </div>
+        </div>
+        <div class="chart-wrap"><canvas id="airlineChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Economy vs Business Class</div>
+            <div class="chart-desc">Average fare split by cabin class — Business typically 3× Economy</div>
+          </div>
+        </div>
+        <div class="chart-wrap"><canvas id="classChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="charts-grid-2">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Price Distribution</div>
+            <div class="chart-desc">Number of flights in each price bracket — most fares fall ₹3K–₹10K</div>
+          </div>
+        </div>
+        <div class="chart-wrap"><canvas id="histChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Impact of Stops on Price</div>
+            <div class="chart-desc">Average fare by number of stops — direct flights vs 1-stop vs 2+ stops</div>
+          </div>
+        </div>
+        <div class="chart-wrap"><canvas id="stopsChart"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── PREDICTOR TAB ── -->
+  <section class="tab-section" id="tab-predictor">
+    <div class="predictor-layout">
+      <div class="predictor-form-card">
+        <h3 class="section-heading">Configure Your Flight</h3>
+        <div class="form-grid">
+          <div class="field-group">
+            <label>Airline</label>
+            <select id="p-airline">
+              {% for a in categories.airline %}<option>{{ a }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="field-group">
+            <label>From</label>
+            <select id="p-source">
+              {% for c in categories.source_city %}<option>{{ c }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="field-group">
+            <label>To</label>
+            <select id="p-dest">
+              {% for c in categories.destination_city %}<option>{{ c }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="field-group">
+            <label>Class</label>
+            <select id="p-class">
+              {% for c in categories.class %}<option>{{ c }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="field-group">
+            <label>Stops</label>
+            <select id="p-stops">
+              {% for s in categories.stops %}<option>{{ s }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="field-group">
+            <label>Departure Time</label>
+            <select id="p-dep">
+              {% for t in categories.departure_time %}<option>{{ t }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="field-group">
+            <label>Arrival Time</label>
+            <select id="p-arr">
+              {% for t in categories.arrival_time %}<option>{{ t }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="field-group">
+            <label>Duration (hours)</label>
+            <input type="number" id="p-duration" value="2.5" step="0.5" min="0.5" max="24">
+          </div>
+          <div class="field-group full-width">
+            <label>Days Before Departure: <strong id="days-display">15</strong></label>
+            <input type="range" id="p-days" min="1" max="90" value="15" oninput="document.getElementById('days-display').textContent=this.value">
+          </div>
+        </div>
+        <div class="predictor-actions">
+          <button class="btn-predict" onclick="runPredict()">⚡ Predict Price</button>
+          <button class="btn-secondary" onclick="saveFavorite()">♡ Save Route</button>
+        </div>
+      </div>
+
+      <div class="predictor-result-panel">
+        <div id="result-placeholder" class="result-placeholder">
+          <div class="placeholder-icon">◈</div>
+          <p>Configure your flight and hit<br><strong>Predict Price</strong></p>
+        </div>
+        <div id="result-card" class="result-card hidden">
+          <div class="result-tier-badge" id="result-tier">Budget</div>
+          <div class="result-price" id="result-price">₹0</div>
+          <div class="result-label">Estimated Fare</div>
+          <div class="result-advice-box" id="result-advice-box">
+            <span id="result-advice">—</span>
+          </div>
+          <div class="result-breakdown" id="result-breakdown"></div>
+          <div class="result-demo" id="result-demo" style="display:none">⚠ Demo mode — add your model for real predictions</div>
+        </div>
+
+        <div class="quick-tips">
+          <div class="tip-heading">💡 Smart Tips</div>
+          <div class="tip-item">Book 30+ days early → up to 40% cheaper</div>
+          <div class="tip-item">Zero stops = best value & time</div>
+          <div class="tip-item">Early morning = ~12% lower fares</div>
+          <div class="tip-item">IndiGo / SpiceJet = budget champions</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── ANALYTICS TAB ── -->
+  <section class="tab-section" id="tab-analytics">
+    <div class="charts-grid-2">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Average Price by Departure City</div>
+            <div class="chart-desc">Which origin city has the most expensive average departing fare?</div>
+          </div>
+        </div>
+        <div class="chart-wrap"><canvas id="cityChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Booking Window vs Price</div>
+            <div class="chart-desc">How price changes as days to departure shrinks — book early to save!</div>
+          </div>
+        </div>
+        <div class="chart-wrap"><canvas id="bookingWindowChart"></canvas></div>
+      </div>
+    </div>
+    <div class="charts-grid-1">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Airline Price Comparison Table</div>
+            <div class="chart-desc">Economy vs Business average fares — see exactly how much the upgrade costs per airline</div>
+          </div>
+        </div>
+        <div class="chart-wrap" style="height:300px"><canvas id="airlineGroupedChart"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── INSIGHTS TAB ── -->
+  <section class="tab-section" id="tab-insights">
+    <div class="insights-intro">
+      <h3>Key Intelligence Cards</h3>
+      <p>Actionable findings extracted from 300K+ flight records</p>
+    </div>
+    <div class="insights-grid">
+      <div class="insight-card green">
+        <div class="insight-icon">📅</div>
+        <div class="insight-title">Book 30+ Days Early</div>
+        <div class="insight-stat">Save up to 40%</div>
+        <div class="insight-body">Fares are most stable 30–60 days before departure. Within 10 days, prices can spike 2–3× baseline. The best window is 3–6 weeks out.</div>
+      </div>
+      <div class="insight-card blue">
+        <div class="insight-icon">🌅</div>
+        <div class="insight-title">Fly Early Morning</div>
+        <div class="insight-stat">~12% cheaper</div>
+        <div class="insight-body">Flights before 7 AM are consistently cheaper than evening and night departures. Bonus: fewer delays and fresher aircraft.</div>
+      </div>
+      <div class="insight-card amber">
+        <div class="insight-icon">✈️</div>
+        <div class="insight-title">Choose Zero Stops</div>
+        <div class="insight-stat">Best value + time</div>
+        <div class="insight-body">Non-stop flights are simultaneously faster and cheaper on most domestic routes. Only book connections when the savings exceed ₹1,500.</div>
+      </div>
+      <div class="insight-card purple">
+        <div class="insight-icon">💼</div>
+        <div class="insight-title">Business Class Premium</div>
+        <div class="insight-stat">~3× Economy price</div>
+        <div class="insight-body">Business class averages ₹18,500 vs ₹6,200 for Economy. Vistara offers the best business product. Book 15 days out for the best availability.</div>
+      </div>
+      <div class="insight-card red">
+        <div class="insight-icon">🏷</div>
+        <div class="insight-title">Budget Airline Leaders</div>
+        <div class="insight-stat">IndiGo / SpiceJet</div>
+        <div class="insight-body">IndiGo averages ₹5,400 and SpiceJet ₹4,800 — the clear budget winners. Air India and Vistara run 60–80% higher, but offer better service.</div>
+      </div>
+      <div class="insight-card teal">
+        <div class="insight-icon">🔑</div>
+        <div class="insight-title">Top Price Drivers</div>
+        <div class="insight-stat">Class → Days → Airline</div>
+        <div class="insight-body">XGBoost feature importance ranks: Cabin class #1, Days left #2, Airline #3, Stops #4, Duration #5. Optimise class + timing for maximum savings.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── AI MODEL TAB ── -->
+  <section class="tab-section" id="tab-ai-model">
+    <div class="model-layout">
+      <div class="model-overview-card">
+        <h3>Model Architecture</h3>
+        <div class="model-spec-grid">
+          <div class="spec-item"><span class="spec-k">Algorithm</span><span class="spec-v">XGBoost Regressor</span></div>
+          <div class="spec-item"><span class="spec-k">Estimators</span><span class="spec-v">300 trees</span></div>
+          <div class="spec-item"><span class="spec-k">Learning Rate</span><span class="spec-v">0.05</span></div>
+          <div class="spec-item"><span class="spec-k">Max Depth</span><span class="spec-v">8 levels</span></div>
+          <div class="spec-item"><span class="spec-k">R² Score</span><span class="spec-v highlight-green">~0.90</span></div>
+          <div class="spec-item"><span class="spec-k">MAE</span><span class="spec-v">~₹1,400</span></div>
+          <div class="spec-item"><span class="spec-k">Validation</span><span class="spec-v">5-Fold CV</span></div>
+          <div class="spec-item"><span class="spec-k">Training Size</span><span class="spec-v">240,000+ rows</span></div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Feature Importance</div>
+            <div class="chart-desc">Which input variables have the most influence on price prediction accuracy?</div>
+          </div>
+        </div>
+        <div class="chart-wrap" style="height:320px"><canvas id="featureChart"></canvas></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Model Comparison</div>
+            <div class="chart-desc">R² score comparison — XGBoost significantly outperforms Linear Regression and Random Forest</div>
+          </div>
+        </div>
+        <div class="chart-wrap" style="height:240px"><canvas id="modelCompareChart"></canvas></div>
+      </div>
+
+      <div class="pipeline-card">
+        <h3>Training Pipeline</h3>
+        <div class="pipeline-steps">
+          <div class="pipe-step"><span class="pipe-num">01</span><span class="pipe-label">Load CSV Data</span><span class="pipe-sub">300K+ records</span></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step"><span class="pipe-num">02</span><span class="pipe-label">Clean & Filter</span><span class="pipe-sub">Remove duplicates, outliers</span></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step"><span class="pipe-num">03</span><span class="pipe-label">Encode Features</span><span class="pipe-sub">LabelEncoder on categoricals</span></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step"><span class="pipe-num">04</span><span class="pipe-label">Train XGBoost</span><span class="pipe-sub">80/20 train-test split</span></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step"><span class="pipe-num">05</span><span class="pipe-label">Evaluate + CV</span><span class="pipe-sub">5-fold cross validation</span></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step"><span class="pipe-num">06</span><span class="pipe-label">Save Model</span><span class="pipe-sub">.pkl + categories.json</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ════════════════════════════════════════
+     PROFILE DRAWER
+════════════════════════════════════════ -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeProfile()"></div>
+<div class="profile-drawer" id="profile-drawer">
+  <div class="drawer-header">
+    <div class="drawer-avatar" id="drawer-avatar">?</div>
+    <div class="drawer-user-info">
+      <div class="drawer-name" id="drawer-name">Guest</div>
+      <div class="drawer-email" id="drawer-email">Not signed in</div>
+    </div>
+    <button class="drawer-close" onclick="closeProfile()">✕</button>
+  </div>
+
+  <div class="drawer-stats" id="drawer-stats">
+    <div class="dstat"><div class="dstat-val" id="ds-searches">0</div><div class="dstat-lbl">Searches</div></div>
+    <div class="dstat"><div class="dstat-val" id="ds-favs">0</div><div class="dstat-lbl">Saved Routes</div></div>
+    <div class="dstat"><div class="dstat-val" id="ds-chats">0</div><div class="dstat-lbl">Chats</div></div>
+  </div>
+
+  <div class="drawer-tabs">
+    <button class="dtab active" onclick="switchDrawerTab('history')">History</button>
+    <button class="dtab" onclick="switchDrawerTab('favorites')">Favorites</button>
+    <button class="dtab" onclick="switchDrawerTab('settings')">Settings</button>
+  </div>
+
+  <div class="drawer-content" id="drawer-history">
+    <div class="history-list" id="history-list">
+      <div class="empty-state">No predictions yet.<br>Run a prediction to see history.</div>
+    </div>
+  </div>
+
+  <div class="drawer-content hidden" id="drawer-favorites">
+    <div class="fav-list" id="fav-list">
+      <div class="empty-state">No saved routes.<br>Save a route from the Predictor.</div>
+    </div>
+  </div>
+
+  <div class="drawer-content hidden" id="drawer-settings">
+    <div class="settings-section">
+      <div class="field-group">
+        <label>Display Name</label>
+        <input type="text" id="settings-name" placeholder="Your name">
+      </div>
+      <button class="btn-primary" onclick="saveSettings()">Save Changes</button>
+    </div>
+    <div class="settings-section danger-zone">
+      <button class="btn-danger" onclick="doLogout()">Sign Out</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     CHATBOT
+════════════════════════════════════════ -->
+<div class="chat-fab" id="chat-fab" onclick="toggleChat()">
+  <span class="fab-icon">◉</span>
+  <span class="fab-badge" id="chat-badge" style="display:none">1</span>
+</div>
+
+<div class="chat-panel" id="chat-panel">
+  <div class="chat-header">
+    <div class="chat-avatar">✈</div>
+    <div class="chat-header-info">
+      <div class="chat-bot-name">Oracle AI</div>
+      <div class="chat-status"><span class="status-dot green"></span> Always online</div>
+    </div>
+    <button class="chat-close" onclick="toggleChat()">✕</button>
+  </div>
+
+  <div class="chat-messages" id="chat-messages">
+    <div class="chat-msg bot">
+      <div class="msg-bubble">
+        👋 Hi! I'm your <strong>Flight Intelligence Assistant</strong>.<br><br>
+        Ask me about prices, airlines, booking timing, or how the AI works!
+      </div>
+      <div class="msg-time">Now</div>
+    </div>
+  </div>
+
+  <div class="chat-suggestions" id="chat-suggestions">
+    <button class="suggestion-chip" onclick="sendSuggestion(this)">When to book cheapest?</button>
+    <button class="suggestion-chip" onclick="sendSuggestion(this)">Which airline is cheapest?</button>
+    <button class="suggestion-chip" onclick="sendSuggestion(this)">How does the model work?</button>
+    <button class="suggestion-chip" onclick="sendSuggestion(this)">Business vs Economy?</button>
+  </div>
+
+  <div class="chat-input-row">
+    <input type="text" id="chat-input" placeholder="Ask anything about flight prices…" onkeydown="if(event.key==='Enter')sendChat()">
+    <button class="chat-send-btn" onclick="sendChat()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
+<script src="{{ url_for('static', filename='js/profile.js') }}"></script>
+</body>
+</html>

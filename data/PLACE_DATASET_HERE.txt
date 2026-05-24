@@ -1,0 +1,3 @@
+Place your Clean_Dataset.csv file in this folder.
+
+The users.json file will be auto-created here when the first user signs up.

@@ -1,0 +1,51 @@
+{
+  "donashree79@gmail.com": {
+    "id": "6b12f603",
+    "name": "Aishwarya M",
+    "email": "donashree79@gmail.com",
+    "password": "9893d4a887c9a566bbf75ee6b7984504ff900e364ea405d2df9bebdef6c59687",
+    "created_at": "2026-05-24T20:08:36.576064",
+    "avatar_initials": "AI",
+    "predictions": [
+      {
+        "id": "f87ea5fa",
+        "timestamp": "2026-05-24T20:16:13.386205",
+        "input": {
+          "airline": "IndiGo",
+          "source_city": "Delhi",
+          "destination_city": "Mumbai",
+          "class": "Economy",
+          "stops": "zero",
+          "departure_time": "Morning",
+          "arrival_time": "Afternoon",
+          "duration": 2,
+          "days_left": 30
+        },
+        "price": 4248,
+        "formatted": "\u20b94,248",
+        "tier": "moderate"
+      },
+      {
+        "id": "22f2e561",
+        "timestamp": "2026-05-24T20:09:24.804686",
+        "input": {
+          "airline": "IndiGo",
+          "source_city": "Delhi",
+          "destination_city": "Hyderabad",
+          "class": "Business",
+          "stops": "zero",
+          "departure_time": "Early_Morning",
+          "arrival_time": "Early_Morning",
+          "duration": 2.5,
+          "days_left": 31
+        },
+        "price": 12702,
+        "formatted": "\u20b912,702",
+        "tier": "premium"
+      }
+    ],
+    "chat_history": [],
+    "favorite_routes": [],
+    "total_searches": 2
+  }
+}
